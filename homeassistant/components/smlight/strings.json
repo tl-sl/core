@@ -112,6 +112,9 @@
       },
       "reconnect_zigbee_router": {
         "name": "Reconnect zigbee router"
+      },
+      "reconnect_zigbee_router2": {
+        "name": "Reconnect zigbee router 2"
       }
     },
     "switch": {
