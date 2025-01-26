@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 import logging
 
+from pysmlight import Radio
 from pysmlight.web import CmdWrapper
 
 from homeassistant.components.button import (
@@ -20,6 +21,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import get_radio_attr
 from .const import DOMAIN
 from .coordinator import SmDataUpdateCoordinator
 from .entity import SmEntity
@@ -31,6 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 class SmButtonDescription(ButtonEntityDescription):
     """Class to describe a Button entity."""
 
+    has_fn: Callable[[list[Radio]], bool] = lambda _: True
     press_fn: Callable[[CmdWrapper], Awaitable[None]]
 
 
@@ -55,12 +58,21 @@ BUTTONS: list[SmButtonDescription] = [
     ),
 ]
 
-ROUTER = SmButtonDescription(
-    key="reconnect_zigbee_router",
-    translation_key="reconnect_zigbee_router",
-    entity_registry_enabled_default=False,
-    press_fn=lambda cmd: cmd.zb_router(),
-)
+ROUTERS: list[SmButtonDescription] = [
+    SmButtonDescription(
+        key="reconnect_zigbee_router",
+        translation_key="reconnect_zigbee_router",
+        entity_registry_enabled_default=False,
+        press_fn=lambda cmd: cmd.zb_router(),
+    ),
+    SmButtonDescription(
+        key="reconnect_zigbee_router2",
+        translation_key="reconnect_zigbee_router2",
+        entity_registry_enabled_default=False,
+        has_fn=lambda radios: len(radios) >= 2,
+        press_fn=lambda cmd: cmd.zb_router(idx=1),
+    ),
+]
 
 
 async def async_setup_entry(
@@ -72,21 +84,27 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.data
 
     async_add_entities(SmButton(coordinator, button) for button in BUTTONS)
-    entity_created = False
+    entity_created = [False, False]
 
     @callback
     def _check_router(startup: bool = False) -> None:
-        nonlocal entity_created
+        def router_entity(idx: int, router: SmButtonDescription) -> None:
+            nonlocal entity_created
+            zb_type = get_radio_attr(coordinator.data.info, idx, "zb_type")
 
-        if coordinator.data.info.zb_type == 1 and not entity_created:
-            async_add_entities([SmButton(coordinator, ROUTER)])
-            entity_created = True
-        elif coordinator.data.info.zb_type != 1 and (startup or entity_created):
-            entity_registry = er.async_get(hass)
-            if entity_id := entity_registry.async_get_entity_id(
-                BUTTON_DOMAIN, DOMAIN, f"{coordinator.unique_id}-{ROUTER.key}"
-            ):
-                entity_registry.async_remove(entity_id)
+            if zb_type == 1 and not entity_created[idx]:
+                async_add_entities([SmButton(coordinator, router)])
+                entity_created[idx] = True
+            elif zb_type != 1 and (startup or entity_created[idx]):
+                entity_registry = er.async_get(hass)
+                if entity_id := entity_registry.async_get_entity_id(
+                    BUTTON_DOMAIN, DOMAIN, f"{coordinator.unique_id}-{router.key}"
+                ):
+                    entity_registry.async_remove(entity_id)
+
+        for idx, router in enumerate(ROUTERS):
+            if router.has_fn(coordinator.data.info.radios):
+                router_entity(idx, router)
 
     coordinator.async_add_listener(_check_router)
     _check_router(startup=True)
