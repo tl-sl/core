@@ -61,6 +61,9 @@
       "zigbee_temperature": {
         "name": "Zigbee chip temp"
       },
+      "zigbee_temperature2": {
+        "name": "Zigbee chip 2 temp"
+      },
       "core_temperature": {
         "name": "Core chip temp"
       },
