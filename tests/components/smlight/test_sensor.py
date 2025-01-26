@@ -73,3 +73,17 @@ async def test_zigbee_uptime_disconnected(
 
     state = hass.states.get("sensor.mock_title_zigbee_uptime")
     assert state.state == STATE_UNKNOWN
+
+
+async def test_zigbee2_temp_sensor(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_smlight_client: MagicMock,
+) -> None:
+    """Test for zb_temp2 if device has second radio."""
+    mock_smlight_client.get_sensors.return_value = Sensors(zb_temp2=20.45)
+    await setup_integration(hass, mock_config_entry)
+
+    state = hass.states.get("sensor.mock_title_zigbee_chip_2_temp")
+    assert state
+    assert state.state == "20.45"
