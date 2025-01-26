@@ -86,6 +86,15 @@ SENSORS: list[SmSensorEntityDescription] = [
         value_fn=lambda x: x.zb_temp,
     ),
     SmSensorEntityDescription(
+        key="zigbee_temperature2",
+        translation_key="zigbee_temperature2",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda x: x.zb_temp2,
+    ),
+    SmSensorEntityDescription(
         key="ram_usage",
         translation_key="ram_usage",
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -132,7 +141,11 @@ async def async_setup_entry(
     async_add_entities(
         chain(
             (SmInfoSensorEntity(coordinator, description) for description in INFO),
-            (SmSensorEntity(coordinator, description) for description in SENSORS),
+            (
+                SmSensorEntity(coordinator, description)
+                for description in SENSORS
+                if description.value_fn(coordinator.data.sensors) is not None
+            ),
             (SmUptimeSensorEntity(coordinator, description) for description in UPTIME),
         )
     )
