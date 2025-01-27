@@ -101,6 +101,14 @@
           "router": "Router",
           "thread": "Thread"
         }
+      },
+      "zigbee_type2": {
+        "name": "Zigbee 2 type",
+        "state": {
+          "coordinator": "Coordinator",
+          "router": "Router",
+          "thread": "Thread"
+        }
       }
     },
     "button": {
