@@ -40,6 +40,7 @@ class SmFwData:
     info: Info
     esp_firmware: list[Firmware] | None
     zb_firmware: list[Firmware] | None
+    zb_firmware2: list[Firmware] | None
 
 
 class SmBaseDataUpdateCoordinator[_DataT](DataUpdateCoordinator[_DataT]):
@@ -150,5 +151,12 @@ class SmFirmwareUpdateCoordinator(SmBaseDataUpdateCoordinator[SmFwData]):
             esp_firmware=await self.client.get_firmware_version(info.fw_channel),
             zb_firmware=await self.client.get_firmware_version(
                 info.fw_channel, device=info.model, mode="zigbee"
+            ),
+            zb_firmware2=(
+                await self.client.get_firmware_version(
+                    info.fw_channel, device=info.model, mode="zigbee", idx=1
+                )
+                if info.model == "SLZB-MR1"
+                else None
             ),
         )
