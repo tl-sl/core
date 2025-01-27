@@ -140,6 +140,9 @@
       },
       "zigbee_update": {
         "name": "Zigbee firmware"
+      },
+      "zigbee_update2": {
+        "name": "Zigbee 2 firmware"
       }
     }
   },
