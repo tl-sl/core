@@ -21,7 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.util.dt import utcnow
 
-from . import SmConfigEntry
+from . import SmConfigEntry, get_radio_attr
 from .const import UPTIME_DEVIATION
 from .coordinator import SmDataUpdateCoordinator
 from .entity import SmEntity
@@ -61,7 +61,14 @@ INFO: list[SmInfoEntityDescription] = [
         translation_key="zigbee_type",
         device_class=SensorDeviceClass.ENUM,
         options=["coordinator", "router", "thread"],
-        value_fn=lambda x: x.zb_type,
+        value_fn=lambda x: get_radio_attr(x, 0, "zb_type"),
+    ),
+    SmInfoEntityDescription(
+        key="zigbee_type2",
+        translation_key="zigbee_type2",
+        device_class=SensorDeviceClass.ENUM,
+        options=["coordinator", "router", "thread"],
+        value_fn=lambda x: get_radio_attr(x, 1, "zb_type"),
     ),
 ]
 
@@ -140,7 +147,11 @@ async def async_setup_entry(
 
     async_add_entities(
         chain(
-            (SmInfoSensorEntity(coordinator, description) for description in INFO),
+            (
+                SmInfoSensorEntity(coordinator, description)
+                for description in INFO
+                if description.value_fn(coordinator.data.info) is not None
+            ),
             (
                 SmSensorEntity(coordinator, description)
                 for description in SENSORS
