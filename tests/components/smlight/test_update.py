@@ -125,6 +125,7 @@ async def test_update_firmware(
 
     event_function(MOCK_FIRMWARE_DONE)
 
+    mock_smlight_client.get_info.side_effect = None
     mock_smlight_client.get_info.return_value = Info(
         sw_version="v2.5.2",
     )
@@ -146,6 +147,7 @@ async def test_update_legacy_firmware_v2(
     mock_smlight_client: MagicMock,
 ) -> None:
     """Test firmware update for legacy v2 firmware."""
+    mock_smlight_client.get_info.side_effect = None
     mock_smlight_client.get_info.return_value = Info(
         sw_version="v2.0.18",
         legacy_api=1,
@@ -171,6 +173,7 @@ async def test_update_legacy_firmware_v2(
 
     event_function(MOCK_FIRMWARE_DONE)
 
+    mock_smlight_client.get_info.side_effect = None
     mock_smlight_client.get_info.return_value = Info(
         sw_version="v2.5.2",
     )
