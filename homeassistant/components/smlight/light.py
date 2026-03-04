@@ -50,9 +50,11 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.data
     model = coordinator.data.info.model or ""
 
-    if "ULTIMA" in model.upper():
-        if not await mqtt.async_wait_for_mqtt_client(hass):
-            return
+    if (
+        "ULTIMA" in model.upper()
+        and await mqtt.async_wait_for_mqtt_client(hass)
+        and coordinator.data.info.mqtt_base_topic is not None
+    ):
         async_add_entities([SmLightEntity(coordinator, AMBILIGHT)])
 
 
@@ -82,6 +84,13 @@ class SmLightEntity(SmEntity, LightEntity):
         self._attr_brightness = 128
         self._attr_effect = "Solid"
         self._attr_effect_list = description.effect_list
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return super().available and getattr(
+            self.coordinator.data.info, "mqtt_connected", False
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Format kwargs into the specific schema for SLZB-OS and publish via MQTT."""
