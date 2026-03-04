@@ -36,6 +36,7 @@ MOCK_ULTIMA = Info(
     MAC="AA:BB:CC:DD:EE:FF",
     model="SLZB-Ultima3",
     mqtt_base_topic="zhub",
+    mqtt_connected=True,
 )
 
 
@@ -89,6 +90,48 @@ async def test_light_not_created_without_mqtt(
     assert state is None
 
 
+async def test_light_not_created_without_mqtt_base_topic(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_smlight_client: MagicMock,
+    mqtt_mock: MqttMockHAClient,
+) -> None:
+    """Test light entity is not created when mqtt_base_topic is None (older firmware)."""
+    mock_ultima_old = Info(
+        MAC="AA:BB:CC:DD:EE:FF",
+        model="SLZB-Ultima3",
+        mqtt_base_topic=None,
+    )
+    mock_smlight_client.get_info.side_effect = None
+    mock_smlight_client.get_info.return_value = mock_ultima_old
+    await setup_integration(hass, mock_config_entry)
+
+    state = hass.states.get("light.mock_title_ambilight")
+    assert state is None
+
+
+async def test_light_unavailable_when_mqtt_disconnected(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_smlight_client: MagicMock,
+    mqtt_mock: MqttMockHAClient,
+) -> None:
+    """Test light entity is unavailable when MQTT is not connected on SLZB device."""
+    mock_ultima_disconnected = Info(
+        MAC="AA:BB:CC:DD:EE:FF",
+        model="SLZB-Ultima3",
+        mqtt_base_topic="zhub",
+        mqtt_connected=False,
+    )
+    mock_smlight_client.get_info.side_effect = None
+    mock_smlight_client.get_info.return_value = mock_ultima_disconnected
+    await setup_integration(hass, mock_config_entry)
+
+    state = hass.states.get("light.mock_title_ambilight")
+    assert state is not None
+    assert state.state == "unavailable"
+
+
 async def test_light_turn_on_off(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
@@ -101,6 +144,8 @@ async def test_light_turn_on_off(
     await setup_integration(hass, mock_config_entry)
 
     entity_id = "light.mock_title_ambilight"
+    state = hass.states.get(entity_id)
+    assert state.state != "unavailable"
 
     mqtt_mock.async_publish.reset_mock()
     await hass.services.async_call(
